@@ -35,7 +35,7 @@ func New(config *Config) *Batcher {
 	config.defaults()
 	return &Batcher{
 		Config:   config,
-		events:   make(chan []byte),
+		events:   make(chan []byte, config.BacklogCount),
 		done:     make(chan struct{}),
 		taskPool: newPool(config.MaxConnections),
 	}

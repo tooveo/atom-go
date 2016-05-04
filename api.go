@@ -17,7 +17,6 @@ var (
 // ironSource.atom api object.
 type Atom struct {
 	*Config
-	client Poster
 }
 
 // New creates new Atom object with the given config.
@@ -26,7 +25,6 @@ func New(config *Config) *Atom {
 	config.defaults()
 	return &Atom{
 		Config: config,
-		client: &Client{config.Url},
 	}
 }
 
@@ -60,10 +58,11 @@ func (a *Atom) put(path, streamName string, data []byte) (*Response, error) {
 	if len(streamName) == 0 {
 		return nil, ErrorInvalidStream
 	}
-	return a.client.Post(path, &Payload{
+	return a.Client.Post(path, &Payload{
 		Stream: streamName,
 		Data:   string(data),
 		Auth:   a.hmac(data),
+		Bulk:   path == "bulk",
 	})
 }
 

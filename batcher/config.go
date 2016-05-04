@@ -15,9 +15,8 @@ const (
 	defaultFlushInterval  = time.Second
 )
 
-// Atom api interface
-type Atomface interface {
-	PutEvent(streamName string, event []byte) (*atom.Response, error)
+// Putter is the interface that wraps the AtomAPI.PutEvents method.
+type Putter interface {
 	PutEvents(streamName string, events ...[]byte) (*atom.Response, error)
 }
 
@@ -51,7 +50,7 @@ type Config struct {
 	Logger *logrus.Logger
 
 	// Client is the Putter interface implementation.
-	Client Atomface
+	Client Putter
 }
 
 // defaults for configuration
