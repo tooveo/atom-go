@@ -2,11 +2,12 @@ package batcher
 
 import (
 	"errors"
-	"github.com/Sirupsen/logrus"
-	"github.com/ironSource/atom-go"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/Sirupsen/logrus"
+	"github.com/ironSource/atom-go"
 )
 
 // Errors

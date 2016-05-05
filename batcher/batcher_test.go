@@ -1,11 +1,12 @@
 package batcher
 
 import (
-	"github.com/ironSource/atom-go"
 	"net/http"
 	"reflect"
 	"sync"
 	"testing"
+
+	"github.com/ironSource/atom-go"
 )
 
 type testCase struct {
