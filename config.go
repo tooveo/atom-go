@@ -1,8 +1,6 @@
 package atom
 
-import (
-	"net/url"
-)
+import "net/url"
 
 type Config struct {
 	// ironSource.atom API key.
