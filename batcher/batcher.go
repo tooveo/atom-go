@@ -53,8 +53,8 @@ func (b *Batcher) Start() {
 // Stop the batcher gracefully. Flushes any in-flight data.
 func (b *Batcher) Stop() {
 	b.Lock()
-	defer b.Unlock()
 	b.stopped = true
+	b.Unlock()
 	b.Logger.WithField("backlog", len(b.events)).Info("stopping batcher")
 
 	// drain
