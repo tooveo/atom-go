@@ -3,6 +3,7 @@ package batcher
 import (
 	"errors"
 	"github.com/Sirupsen/logrus"
+	"github.com/ironSource/atom-go"
 	"net/http"
 	"sync"
 	"time"
@@ -18,7 +19,7 @@ type Batcher struct {
 	sync.Mutex
 	*Config
 	taskPool *TaskPool
-	events   chan []byte
+	events   chan *atom.Event
 	failure  chan *FailureEvent
 	done     chan struct{}
 
@@ -35,7 +36,7 @@ func New(config *Config) *Batcher {
 	config.defaults()
 	return &Batcher{
 		Config:   config,
-		events:   make(chan []byte, config.BacklogCount),
+		events:   make(chan *atom.Event, config.BacklogCount),
 		done:     make(chan struct{}),
 		taskPool: newPool(config.MaxConnections),
 	}
@@ -82,14 +83,14 @@ func (b *Batcher) Put(data []byte) error {
 		return ErrorStoppedBatcher
 	}
 
-	b.events <- data
+	b.events <- &atom.Event{Data: data}
 	return nil
 }
 
 // Failure event type
 type FailureEvent struct {
 	error
-	Data []byte
+	*atom.Event
 }
 
 // NotifyFailures registers and return listener to handle undeliverable messages.
@@ -109,7 +110,7 @@ func (b *Batcher) NotifyFailures() <-chan *FailureEvent {
 func (b *Batcher) loop() {
 	size := 0
 	drain := false
-	buf := make([][]byte, 0, b.BatchCount)
+	buf := make([]*atom.Event, 0, b.BatchCount)
 	tick := time.NewTicker(b.FlushInterval)
 
 	flush := func(msg string) {
@@ -133,7 +134,7 @@ func (b *Batcher) loop() {
 				b.Logger.Info("backlog drained")
 				return
 			}
-			esize := len(event)
+			esize := len(event.Data)
 			if size+esize > b.BatchSize {
 				flush("batch size")
 			}
@@ -154,10 +155,13 @@ func (b *Batcher) loop() {
 
 // flush records and retry failures if necessary.
 // for example: when we get "Service Unavailable" response
-func (b *Batcher) flush(events [][]byte, reason string) {
+func (b *Batcher) flush(events []*atom.Event, reason string) {
 	b.Logger.WithField("reason", reason).Infof("flush %v records", len(events))
 
-	resp, err := b.Client.PutEvents(b.StreamName, events...)
+	resp, err := b.Client.PutEvents(&atom.PutEventsInput{
+		StreamName: b.StreamName,
+		Events:     events,
+	})
 	if err != nil {
 		b.flushError(events, err)
 		return
@@ -183,7 +187,7 @@ func (b *Batcher) flush(events [][]byte, reason string) {
 	b.flush(events, "retry")
 }
 
-func (b *Batcher) flushError(events [][]byte, err error) {
+func (b *Batcher) flushError(events []*atom.Event, err error) {
 	b.Backoff.Reset()
 	b.Logger.WithError(err).Error("flush")
 	b.Lock()

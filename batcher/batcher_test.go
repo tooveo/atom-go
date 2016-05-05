@@ -129,11 +129,11 @@ type clientMock struct {
 	responses []*atom.Response
 }
 
-func (c *clientMock) PutEvents(streamName string, events ...[]byte) (*atom.Response, error) {
+func (c *clientMock) PutEvents(input *atom.PutEventsInput) (*atom.Response, error) {
 	res := c.responses[c.calls]
 	if res.StatusCode == http.StatusOK {
-		for _, ev := range events {
-			c.incoming[c.calls] = append(c.incoming[c.calls], string(ev))
+		for _, ev := range input.Events {
+			c.incoming[c.calls] = append(c.incoming[c.calls], string(ev.Data))
 		}
 	}
 	c.calls++

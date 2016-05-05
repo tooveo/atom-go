@@ -17,7 +17,7 @@ const (
 
 // Putter is the interface that wraps the AtomAPI.PutEvents method.
 type Putter interface {
-	PutEvents(streamName string, events ...[]byte) (*atom.Response, error)
+	PutEvents(*atom.PutEventsInput) (*atom.Response, error)
 }
 
 type Config struct {
