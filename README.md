@@ -1,5 +1,5 @@
 # ironSource.atom SDK for Go [![Build status][travis-image]][travis-url] [![License][license-image]][license-url] [![GoDoc][godoc-img]][godoc-url]
-
+atom-go is the official [ironSource.atom](https://atom.ironsrc.com/#/signup) SDK for the Go programming language.
 
 
 ### License
