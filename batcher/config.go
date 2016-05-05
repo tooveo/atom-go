@@ -74,6 +74,7 @@ func (c *Config) defaults() {
 	if c.FlushInterval == 0 {
 		c.FlushInterval = time.Second * 5
 	}
+	falseOrPanic(len(c.StreamName) == 0, "atom: StreamName length must be at least 1")
 }
 
 func falseOrPanic(p bool, msg string) {
