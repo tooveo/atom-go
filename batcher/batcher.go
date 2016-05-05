@@ -185,6 +185,8 @@ func (b *Batcher) flush(events []*atom.Event, reason string) {
 		"backoff": backoff,
 	}).Warn("flush failed")
 
+	time.Sleep(backoff)
+
 	b.flush(events, "retry")
 }
 
