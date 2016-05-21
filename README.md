@@ -1,4 +1,9 @@
-# ironSource.atom SDK for Go [![Build status][travis-image]][travis-url] [![License][license-image]][license-url] [![GoDoc][godoc-img]][godoc-url]
+# ironSource.atom SDK for Go 
+[![Build status][travis-image]][travis-url]
+[![License][license-image]][license-url]
+[![GoDoc][godoc-img]][godoc-url]
+[![Go Report Card][goreport-image]][goreport-url]
+
 atom-go is the official [ironSource.atom](http://www.ironsrc.com/data-flow-management) SDK for the Go programming language.
 
 - [Get started](https://atom.ironsrc.com/#/signup)
@@ -94,3 +99,5 @@ MIT
 [license-url]: LICENSE
 [travis-image]: https://img.shields.io/travis/ironSource/atom-go.svg?style=flat-square
 [travis-url]: https://travis-ci.org/ironSource/atom-go
+[goreport-image]: https://goreportcard.com/badge/github.com/ironSource/atom-go?style=flat-square
+[goreport-url]: https://goreportcard.com/report/github.com/ironSource/atom-go
