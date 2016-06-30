@@ -5,7 +5,6 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/ironSource/atom-go"
-	"github.com/jpillora/backoff"
 )
 
 const (
@@ -40,9 +39,6 @@ type Config struct {
 
 	// Number of requests to sent concurrently. Default to 24.
 	MaxConnections int
-
-	// Backoff determines the backoff strategy for record failures.
-	Backoff backoff.Backoff
 
 	// Logger is the logger used. Default to logrus.Log.
 	Logger *logrus.Logger

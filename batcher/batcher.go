@@ -8,6 +8,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/ironSource/atom-go"
+	"github.com/jpillora/backoff"
 )
 
 // Errors
@@ -157,41 +158,45 @@ func (b *Batcher) loop() {
 // flush records and retry failures if necessary.
 // for example: when we get "Service Unavailable" response
 func (b *Batcher) flush(events []*atom.Event, reason string) {
-	b.Logger.WithField("reason", reason).Infof("flush %v records", len(events))
-
-	resp, err := b.Client.PutEvents(&atom.PutEventsInput{
-		StreamName: b.StreamName,
-		Events:     events,
-	})
-	if err != nil {
-		b.flushError(events, err)
-		return
+	bf := &backoff.Backoff{
+		Jitter: true,
 	}
+	for {
+		b.Logger.WithField("reason", reason).Infof("flush %v records", len(events))
+		resp, err := b.Client.PutEvents(&atom.PutEventsInput{
+			StreamName: b.StreamName,
+			Events:     events,
+		})
 
-	if resp.StatusCode >= http.StatusBadRequest && resp.StatusCode < http.StatusInternalServerError {
-		b.flushError(events, errors.New(resp.Message))
-		return
+		if err != nil {
+			b.flushError(events, err)
+			return
+		}
+
+		if resp.StatusCode >= http.StatusBadRequest && resp.StatusCode < http.StatusInternalServerError {
+			b.flushError(events, errors.New(resp.Message))
+			return
+		}
+
+		if resp.StatusCode == http.StatusOK {
+			return
+		}
+
+		duration := bf.Duration()
+
+		b.Logger.WithFields(logrus.Fields{
+			"status":  resp.Status,
+			"backoff": duration,
+		}).Warn("flush failed")
+
+		time.Sleep(duration)
+
+		// change the logging state for the next itertion
+		reason = "retry"
 	}
-
-	if resp.StatusCode == http.StatusOK {
-		b.Backoff.Reset()
-		return
-	}
-
-	backoff := b.Backoff.Duration()
-
-	b.Logger.WithFields(logrus.Fields{
-		"status":  resp.Status,
-		"backoff": backoff,
-	}).Warn("flush failed")
-
-	time.Sleep(backoff)
-
-	b.flush(events, "retry")
 }
 
 func (b *Batcher) flushError(events []*atom.Event, err error) {
-	b.Backoff.Reset()
 	b.Logger.WithError(err).Error("flush")
 	b.Lock()
 	if b.notify {
