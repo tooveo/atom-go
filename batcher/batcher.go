@@ -20,10 +20,10 @@ var (
 type Batcher struct {
 	sync.Mutex
 	*Config
-	taskPool *TaskPool
-	events   chan *atom.Event
-	failure  chan *FailureEvent
-	done     chan struct{}
+	events    chan *atom.Event
+	failure   chan *FailureEvent
+	done      chan struct{}
+	semaphore semaphore
 
 	// state of the Batcher.
 	// notify set to true after calling to `NotifyFailures`
@@ -37,17 +37,16 @@ type Batcher struct {
 func New(config *Config) *Batcher {
 	config.defaults()
 	return &Batcher{
-		Config:   config,
-		events:   make(chan *atom.Event, config.BacklogCount),
-		done:     make(chan struct{}),
-		taskPool: newPool(config.MaxConnections),
+		Config:    config,
+		events:    make(chan *atom.Event, config.BacklogCount),
+		done:      make(chan struct{}),
+		semaphore: make(chan struct{}, config.MaxConnections),
 	}
 }
 
 // Start the batcher
 func (b *Batcher) Start() {
 	b.Logger.WithField("stream", b.StreamName).Info("starting batcher")
-	b.taskPool.Start()
 	go b.loop()
 }
 
@@ -64,7 +63,7 @@ func (b *Batcher) Stop() {
 
 	// wait
 	<-b.done
-	b.taskPool.Stop()
+	b.semaphore.wait()
 
 	b.Logger.Info("stopped batcher")
 }
@@ -116,10 +115,8 @@ func (b *Batcher) loop() {
 	tick := time.NewTicker(b.FlushInterval)
 
 	flush := func(msg string) {
-		batch := buf
-		b.taskPool.Put(func() {
-			b.flush(batch, msg)
-		})
+		b.semaphore.acquire()
+		go b.flush(buf, msg)
 		buf = nil
 		size = 0
 	}
@@ -161,6 +158,9 @@ func (b *Batcher) flush(events []*atom.Event, reason string) {
 	bf := &backoff.Backoff{
 		Jitter: true,
 	}
+
+	defer b.semaphore.release()
+
 	for {
 		b.Logger.WithField("reason", reason).Infof("flush %v records", len(events))
 		resp, err := b.Client.PutEvents(&atom.PutEventsInput{
